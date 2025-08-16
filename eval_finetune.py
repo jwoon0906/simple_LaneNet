@@ -12,6 +12,7 @@ model.load_state_dict(torch.load('best_finetuned_model.pt'))
 image_paths = ["test_image1.png", "test_image2.png", "test_image3.png", "test_image4.png","test_image5.png","test_image6.png","test_image7.png","test_image8.png","test_image9.png","test_image10.png"]  # Replace with your image paths
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
+avg_time = 0.0
 
 transform = transforms.Compose([
     transforms.ToPILImage(),  # numpy 배열을 PIL 이미지로 변환
@@ -21,17 +22,19 @@ transform = transforms.Compose([
 fig, axes = plt.subplots(10, 2, figsize=(20, 40))
 avg_time = 0
 for i, image_path in enumerate(image_paths):
+    start = time.time()
+
     # Load and preprocess image
     image = cv2.imread(image_path)
     input_image = transform(image).unsqueeze(0).to(device)
 
     # Perform inference
     with torch.no_grad():
-        start = time.time()
         output = model(input_image)
+        output = output.squeeze().cpu().numpy()
         end = time.time()
         avg_time = avg_time + (end-start)
-        output = output.squeeze().cpu().numpy()
+
 
     # Threshold the output to create a binary mask
     mask = (output > 0.2).astype(np.uint8) * 255

@@ -20,7 +20,6 @@ class PairedDataset(Dataset):
         self.data_dir = data_dir
         self.label_dir = label_dir
         self.transform = transform
-        # 파일 이름을 자연스러운 순서로 정렬
         self.data_images = natsorted([f for f in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, f))])
         self.label_images = natsorted([f for f in os.listdir(label_dir) if os.path.isfile(os.path.join(label_dir, f))])
 
@@ -33,7 +32,7 @@ class PairedDataset(Dataset):
 
         data_image = Image.open(data_path).convert("RGB")
         label_image = Image.open(label_path).convert("L")
-        print(torch.unique(label_image))  # 출력: tensor([0., 255.]) 또는 tensor([0., 1.])
+        # print(torch.unique(label_image))  # 출력: tensor([0., 255.]) or tensor([0., 1.])
         if self.transform:
             data_image = self.transform(data_image)
             label_image = self.transform(label_image)
@@ -50,19 +49,19 @@ class DepthwiseSeparableConv(nn.Module):
             in_channels, 
             kernel_size=kernel_size, 
             padding=padding, 
-            groups=in_channels  # Depthwise Convolution
+            groups=in_channels
         )
         self.pointwise = nn.Conv2d(
             in_channels, 
             out_channels, 
-            kernel_size=1  # Pointwise Convolutiondataloader
+            kernel_size=1
         )
         self.bn = nn.BatchNorm2d(out_channels)
     def forward(self, x):
         x = self.depthwise(x)
         x = self.pointwise(x)
         x = self.bn(x)
-        return F.relu(x)  # BatchNorm 뒤에 ReLU 추가
+        return F.relu(x)
 print("ok2")
 class SEBlock(nn.Module):
     def __init__(self, in_channels, reduction=16):
@@ -72,11 +71,11 @@ class SEBlock(nn.Module):
 
     def forward(self, x):
         batch, channels, _, _ = x.size()
-        y = torch.mean(x, dim=(2, 3))  # Global Average Pooling
-        y = y.view(batch, channels)  # Flatten for Linear layers
+        y = torch.mean(x, dim=(2, 3))
+        y = y.view(batch, channels)
         y = F.relu(self.fc1(y))
         y = torch.sigmoid(self.fc2(y))
-        y = y.view(batch, channels, 1, 1)  # Reshape back to (B, C, 1, 1)
+        y = y.view(batch, channels, 1, 1)
         return x * y
 
 
@@ -114,7 +113,7 @@ class OptimizedLaneNet(nn.Module):
         )
 
         # Decoder 1
-        self.dec1_conv1 = DepthwiseSeparableConv(64, 64)  # 기존 32 → 64
+        self.dec1_conv1 = DepthwiseSeparableConv(64, 64)  # 기존 32 -> 64
         self.dec1_upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         self.dec1_conv2 = nn.Sequential(
             DepthwiseSeparableConv(64, 64),
@@ -156,6 +155,6 @@ class OptimizedLaneNet(nn.Module):
         x = F.relu(self.dec2_conv1(x))
         x = self.dec2_upsample(x)
         x = torch.sigmoid(self.dec2_conv2(x))
-        x = F.interpolate(x, size=(270, 480), mode='bilinear', align_corners=False)  # 라벨 크기와 맞춤
+        x = F.interpolate(x, size=(270, 480), mode='bilinear', align_corners=False)
 
         return x
