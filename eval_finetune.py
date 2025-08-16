@@ -6,10 +6,13 @@ from torchvision import transforms
 import cv2
 import numpy as np
 import time
+import glob
+
 model = OptimizedLaneNet()
 model.load_state_dict(torch.load('best_finetuned_model.pt'))
 
-image_paths = ["test_image1.png", "test_image2.png", "test_image3.png", "test_image4.png","test_image5.png","test_image6.png","test_image7.png","test_image8.png","test_image9.png","test_image10.png"]  # Replace with your image paths
+image_paths = sorted(glob.glob("test_image/test_image*.png"))
+# Replace with your image paths
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 avg_time = 0.0
